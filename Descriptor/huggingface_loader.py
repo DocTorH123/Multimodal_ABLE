@@ -10,7 +10,7 @@ import datasets
 def load_model(model_path, **kwargs):
     model = VisionEncoderDecoderModel.from_pretrained(model_path)
     model.config.decoder.max_length = kwargs["max_length"]
-    model.config.decoder.min_length = kwargs["min_length"] if "min_length" in kwargs else 0
+    model.config.decoder.min_length = kwargs["min_length"]
     model.config.decoder.num_beams = kwargs["num_beams"] if "num_beams" in kwargs else 1
     return model
 

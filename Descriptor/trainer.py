@@ -1,3 +1,5 @@
+import sys
+
 import torch
 import util_functions
 import huggingface_loader
@@ -10,12 +12,12 @@ from transformers import (
 
 def train_model(TRAINING_ITEM,
                 model_path,
-                datasets_path,
+                dataset_path,
                 **kwargs):
 
     # Load dataset and add image_path column
     print("Loading dataset... ", end="")
-    dataset = huggingface_loader.load_dataset(datasets_path, "trimmed", "./national_gallery_dataset")
+    dataset = huggingface_loader.load_dataset(dataset_path, "trimmed", "./national_gallery_dataset")
     if kwargs["max_length"] == -1 :
         kwargs["max_length"] = max([len(dataset[TRAINING_ITEM][i]) for i in range(len(dataset))])
     print("Success!")
@@ -97,3 +99,27 @@ def train_model(TRAINING_ITEM,
     print("Success!")
 
     return model, feature_extractor, tokenizer, kwargs["max_length"]
+
+if __name__ == "__main__" :
+    # Parse arguments as dictionary
+    argv_dict = {}
+    for arg_index in range(1, len(sys.argv)) :
+        if sys.argv[arg_index][0] == '-' and not sys.argv[arg_index][1:].isdigit() :
+            try :
+                argv_dict[sys.argv[arg_index][1:]] = int(sys.argv[arg_index + 1])
+            except ValueError :
+                argv_dict[sys.argv[arg_index][1:]] = sys.argv[arg_index + 1]
+
+    # Set hyper parameters
+    TRAINING_ITEM = argv_dict.get("train", False)
+    MAX_LENGTH = argv_dict.get("max_length", -1)  # -1 : auto calculate, else : set manually
+    MIN_LENGTH = argv_dict.get("min_length", 0)
+    NUM_BEAMS = argv_dict.get("num_beams", 4)
+    model_path = argv_dict.get("model_path", "nlpconnect/vit-gpt2-image-captioning")
+    dataset_path = argv_dict.get("dataset_path", "Yumbang/uk-national-gallery-thumbnail-and-description")
+
+    # Train model and save it
+    if TRAINING_ITEM :
+        print(" ---------- Training " + argv_dict['train'] + " inference model ---------- ")
+        Model_info = train_model(TRAINING_ITEM, model_path, dataset_path,
+                                 max_length=MAX_LENGTH, num_beams=NUM_BEAMS, min_length=MIN_LENGTH)
