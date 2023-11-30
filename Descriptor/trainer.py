@@ -94,7 +94,7 @@ def train_model(TRAINING_ITEM,
     print("Finish!")
 
     # Save model
-    print("Saving model... ", end="")
+    print("Saving best model... ", end="")
     trainer.save_model("./" + TRAINING_ITEM + " model/best_model")
     print("Success!")
 
