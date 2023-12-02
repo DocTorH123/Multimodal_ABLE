@@ -13,11 +13,12 @@ from transformers import (
 def train_model(TRAINING_ITEM,
                 model_path,
                 dataset_path,
+                device,
                 **kwargs):
 
     # Load dataset and add image_path column
     print("Loading dataset... ", end="")
-    dataset = huggingface_loader.load_dataset(dataset_path, "trimmed", "./national_gallery_dataset")
+    dataset = huggingface_loader.load_dataset(dataset_path, "trimmed", "./Multimodal_ABLE/Descriptor/national_gallery_dataset")
     if kwargs["max_length"] == -1 :
         kwargs["max_length"] = max([len(dataset[TRAINING_ITEM][i]) for i in range(len(dataset))])
     print("Success!")
@@ -26,16 +27,19 @@ def train_model(TRAINING_ITEM,
     # Load model, feature extractor and tokenizer
     print("Loading model, feature extractor and tokenizer... ", end="")
     model = huggingface_loader.load_model(model_path, **kwargs)
+    print(model)
+    print(model.config)
     feature_extractor = huggingface_loader.load_feature_extractor(model_path)
     tokenizer = huggingface_loader.load_tokenizer(model_path)
     print("Success!")
 
     # Move model to GPU if available
     print("Moving model to GPU... ", end="")
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    #device = "cpu"
+    if device in ["gpu", "cuda", "cuda:0"]:
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model.to(device)
     print("Success!")
+    print(" * Training device :", device)
 
     # Preprocess dataset
     print("Preprocessing dataset... ", end="")
@@ -53,8 +57,8 @@ def train_model(TRAINING_ITEM,
     # Set training arguments
     print("Setting training arguments... ", end="")
     training_args = Seq2SeqTrainingArguments(
-        output_dir="./" + TRAINING_ITEM + " model",
-        logging_dir="./" + TRAINING_ITEM + " model/logs",
+        output_dir="./Multimodal_ABLE/Descriptor/" + TRAINING_ITEM + " model",
+        logging_dir="./Multimodal_ABLE/Descriptor/" + TRAINING_ITEM + " model/logs",
         per_device_train_batch_size=5,
         per_device_eval_batch_size=5,
         predict_with_generate=True,
@@ -68,7 +72,7 @@ def train_model(TRAINING_ITEM,
         eval_steps=120,
         warmup_steps=1000,
         save_total_limit=100,
-        fp16=True,
+        fp16=True if device != "cpu" else False,
         overwrite_output_dir=True,
         gradient_accumulation_steps=2,
         load_best_model_at_end=True,
@@ -112,14 +116,15 @@ if __name__ == "__main__" :
 
     # Set hyper parameters
     TRAINING_ITEM = argv_dict.get("train", False)
-    MAX_LENGTH = argv_dict.get("max_length", -1)  # -1 : auto calculate, else : set manually
-    MIN_LENGTH = argv_dict.get("min_length", 0)
+    MAX_LENGTH = argv_dict.get("max_len", -1)  # -1 : auto calculate, else : set manually
+    MIN_LENGTH = argv_dict.get("min_len", 0)
     NUM_BEAMS = argv_dict.get("num_beams", 4)
+    DEVICE = argv_dict.get("device", "cpu")
     model_path = argv_dict.get("model_path", "nlpconnect/vit-gpt2-image-captioning")
     dataset_path = argv_dict.get("dataset_path", "Yumbang/uk-national-gallery-thumbnail-and-description")
 
     # Train model and save it
     if TRAINING_ITEM :
         print(" ---------- Training " + argv_dict['train'] + " inference model ---------- ")
-        Model_info = train_model(TRAINING_ITEM, model_path, dataset_path,
+        Model_info = train_model(TRAINING_ITEM, model_path, dataset_path, DEVICE,
                                  max_length=MAX_LENGTH, num_beams=NUM_BEAMS, min_length=MIN_LENGTH)

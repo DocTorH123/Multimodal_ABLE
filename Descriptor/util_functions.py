@@ -1,3 +1,4 @@
+import numpy as np
 from PIL import Image
 
 # Label tokenization function
@@ -7,7 +8,7 @@ def tokenization_fn(captions, max_target_length, tokenizer) :
 
 # Image feature extraction function
 def feature_extraction_fn(image_paths, feature_extractor) :
-    images = [Image.open(image_file) for image_file in image_paths]
+    images = np.array([Image.open(image_file) for image_file in image_paths])
 
     encoder_inputs = feature_extractor(images=images, return_tensors="np")
     return encoder_inputs.pixel_values
