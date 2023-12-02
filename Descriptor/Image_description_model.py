@@ -9,10 +9,6 @@ from transformers import (
 
 from os import listdir
 
-# Hyper parameters
-MAX_LENGTH = 60  # -1 : auto calculate, else : set manually
-NUM_BEAMS = 4
-
 # Load model, feature extractor and tokenizer from local
 title_model_path = "./Title model/best_model"
 title_model = VisionEncoderDecoderModel.from_pretrained(title_model_path, local_files_only=True)
@@ -32,7 +28,7 @@ for test_img_name in test_img_names :
     test_img_tensor = title_feature_extractor(images=test_img, return_tensors="pt").pixel_values.to(device)
 
     # Inference
-    result = title_model.generate(test_img_tensor, num_beams=NUM_BEAMS, max_length=MAX_LENGTH, early_stopping=True)
+    result = title_model.generate(test_img_tensor)
     result = title_tokenizer.batch_decode(result, skip_special_tokens=True)
 
     # Print results

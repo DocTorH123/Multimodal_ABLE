@@ -25,6 +25,8 @@ def train_model(TRAINING_ITEM,
     print("Success!")
     print(" * Number of " + TRAINING_ITEM + " data :", len(dataset))
     print(" * Maximum length of " + TRAINING_ITEM + " :", kwargs["max_length"])
+
+    # Reformat dataset (if max_length >= GPT2_MAX_NUM_POSITIONS)
     if kwargs["max_length"] >= GPT2_MAX_NUM_POSITIONS :
         kwargs["max_length"] = GPT2_MAX_NUM_POSITIONS - 1
         dataset = dataset.filter(lambda example : len(example[TRAINING_ITEM]) <= kwargs["max_length"])

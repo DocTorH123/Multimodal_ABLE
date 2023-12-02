@@ -37,7 +37,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 image_transformer = image_transformation(img_dim)
 weight_path = "Artemis_weights/emotion_classification_best_model.pt"
-model = torch.load(weight_path, map_location=None)
+model = torch.load(weight_path, map_location=None).to(device)
 
 test_img_dir = "../test_images"
 test_img_names = [f for f in listdir(test_img_dir)]
