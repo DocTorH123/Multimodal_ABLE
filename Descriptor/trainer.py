@@ -10,33 +10,40 @@ from transformers import (
     default_data_collator
 )
 
+GPT2_MAX_NUM_POSITIONS = 1024
+
 def train_model(TRAINING_ITEM,
                 model_path,
                 dataset_path,
-                device,
                 **kwargs):
 
-    # Load dataset and add image_path column
+    # Load dataset and add image_path column to it
     print("Loading dataset... ", end="")
     dataset = huggingface_loader.load_dataset(dataset_path, "trimmed", "./Multimodal_ABLE/Descriptor/national_gallery_dataset")
     if kwargs["max_length"] == -1 :
         kwargs["max_length"] = max([len(dataset[TRAINING_ITEM][i]) for i in range(len(dataset))])
     print("Success!")
+    print(" * Number of " + TRAINING_ITEM + " data :", len(dataset))
     print(" * Maximum length of " + TRAINING_ITEM + " :", kwargs["max_length"])
+    if kwargs["max_length"] >= GPT2_MAX_NUM_POSITIONS :
+        kwargs["max_length"] = GPT2_MAX_NUM_POSITIONS - 1
+        dataset = dataset.filter(lambda example : len(example[TRAINING_ITEM]) <= kwargs["max_length"])
+        print(" * Maximum length of some items in " + TRAINING_ITEM + " was too long! (>" + str(GPT2_MAX_NUM_POSITIONS) + "), So filtered them. (New size: " + str(len(dataset)) + ")")
 
-    # Load model, feature extractor and tokenizer
+    # Load model, feature extractor and tokenizer from pretrained model
     print("Loading model, feature extractor and tokenizer... ", end="")
     model = huggingface_loader.load_model(model_path, **kwargs)
-    print(model)
-    print(model.config)
     feature_extractor = huggingface_loader.load_feature_extractor(model_path)
     tokenizer = huggingface_loader.load_tokenizer(model_path)
     print("Success!")
 
-    # Move model to GPU if available
-    print("Moving model to GPU... ", end="")
-    if device in ["gpu", "cuda", "cuda:0"]:
+    # Move model to device (cpu or gpu)
+    device = kwargs["device"]
+    print("Moving model to " + device + "... ", end="")
+    if device in ["gpu", "cuda"]:
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    elif device[0:5] == "cuda:" :
+        device = device if torch.cuda.is_available() else "cpu"
     model.to(device)
     print("Success!")
     print(" * Training device :", device)
@@ -72,7 +79,7 @@ def train_model(TRAINING_ITEM,
         eval_steps=120,
         warmup_steps=1000,
         save_total_limit=100,
-        fp16=True if device != "cpu" else False,
+        fp16=False if device == "cpu" else True,
         overwrite_output_dir=True,
         gradient_accumulation_steps=2,
         load_best_model_at_end=True,
@@ -99,7 +106,7 @@ def train_model(TRAINING_ITEM,
 
     # Save model
     print("Saving best model... ", end="")
-    trainer.save_model("./" + TRAINING_ITEM + " model/best_model")
+    trainer.save_model("./Multimodal_ABLE/Descriptor/" + TRAINING_ITEM + " model/best_model")
     print("Success!")
 
     return model, feature_extractor, tokenizer, kwargs["max_length"]
@@ -126,5 +133,5 @@ if __name__ == "__main__" :
     # Train model and save it
     if TRAINING_ITEM :
         print(" ---------- Training " + argv_dict['train'] + " inference model ---------- ")
-        Model_info = train_model(TRAINING_ITEM, model_path, dataset_path, DEVICE,
-                                 max_length=MAX_LENGTH, num_beams=NUM_BEAMS, min_length=MIN_LENGTH)
+        Model_info = train_model(TRAINING_ITEM, model_path, dataset_path,
+                                 device=DEVICE, max_length=MAX_LENGTH, num_beams=NUM_BEAMS, min_length=MIN_LENGTH)

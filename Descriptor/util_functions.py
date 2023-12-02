@@ -22,3 +22,8 @@ def preprocess_fn(dataset, max_target_length, label_subject, tokenizer, feature_
                     'labels': tokenization_fn(captions, max_target_length, tokenizer)}
 
     return model_inputs
+
+# Function for reformatting dataset (if max_length >= GPT2_MAX_NUM_POSITIONS)
+def reformat_dataset(dataset, label_subject, max_length) :
+    dataset[label_subject] = [dataset[label_subject][i][:max_length] for i in range(len(dataset))]
+    return dataset

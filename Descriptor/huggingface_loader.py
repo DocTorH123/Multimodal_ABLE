@@ -9,8 +9,7 @@ import datasets
 # Function for loading model, feature extractor and tokenizer
 def load_model(model_path, **kwargs):
     model = VisionEncoderDecoderModel.from_pretrained(model_path)
-    model.config.decoder.n_positions = kwargs["max_length"]
-    model.config.decoder.n_ctx = kwargs["max_length"]
+    model.config.decoder.max_length = kwargs["max_length"]
     model.config.decoder.num_beams = kwargs["num_beams"] if "num_beams" in kwargs else 1
     return model
 

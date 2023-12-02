@@ -9,35 +9,16 @@ from transformers import (
 
 from os import listdir
 
-import trainer
-
 # Hyper parameters
 MAX_LENGTH = 60  # -1 : auto calculate, else : set manually
 NUM_BEAMS = 4
 
-## Train or load model from local ##
-TRAIN = False
+# Load model, feature extractor and tokenizer from local
+title_model_path = "./Title model/best_model"
+title_model = VisionEncoderDecoderModel.from_pretrained(title_model_path, local_files_only=True)
+title_feature_extractor = ViTImageProcessor.from_pretrained(title_model_path, local_files_only=True)
+title_tokenizer = AutoTokenizer.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
 
-if TRAIN :
-    #print("Training Overview Description model...")
-    #description_model = trainer.train_model("Overview Description")
-
-    model_path = "nlpconnect/vit-gpt2-image-captioning"
-    datasets_path = "Yumbang/uk-national-gallery-thumbnail-and-description"
-
-    print("Training title inference model")
-    title_model, title_feature_extractor, title_tokenizer, MAX_LENGTH = trainer.train_model("Title",
-                                                                                            model_path, datasets_path,
-                                                                                            max_length=MAX_LENGTH,
-                                                                                            num_beams=NUM_BEAMS)
-else :
-    # Load model, feature extractor and tokenizer from local
-    title_model_path = "./Title model/best_model"
-    title_model = VisionEncoderDecoderModel.from_pretrained(title_model_path, local_files_only=True)
-    title_feature_extractor = ViTImageProcessor.from_pretrained(title_model_path, local_files_only=True)
-    title_tokenizer = AutoTokenizer.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
-
-## Move to inference step ##
 # Set device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 title_model.to(device)
