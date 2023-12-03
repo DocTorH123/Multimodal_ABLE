@@ -27,8 +27,8 @@ def train_model(TRAINING_ITEM,
     print(" * Maximum length of " + TRAINING_ITEM + " :", kwargs["max_length"])
 
     # Reformat dataset (if max_length >= GPT2_MAX_NUM_POSITIONS)
-    if kwargs["max_length"] >= GPT2_MAX_NUM_POSITIONS :
-        kwargs["max_length"] = GPT2_MAX_NUM_POSITIONS - 1
+    if kwargs["max_length"] > GPT2_MAX_NUM_POSITIONS :
+        kwargs["max_length"] = GPT2_MAX_NUM_POSITIONS
         dataset = dataset.filter(lambda example : len(example[TRAINING_ITEM]) <= kwargs["max_length"])
         print(" * Maximum length of some items in " + TRAINING_ITEM + " was too long! (>" + str(GPT2_MAX_NUM_POSITIONS) + "), So filtered them. (New size: " + str(len(dataset)) + ")")
 
@@ -68,18 +68,19 @@ def train_model(TRAINING_ITEM,
     training_args = Seq2SeqTrainingArguments(
         output_dir="./Multimodal_ABLE/Descriptor/" + TRAINING_ITEM + " model",
         logging_dir="./Multimodal_ABLE/Descriptor/" + TRAINING_ITEM + " model/logs",
-        per_device_train_batch_size=5,
-        per_device_eval_batch_size=5,
+        per_device_train_batch_size=4,
+        per_device_eval_batch_size=4,
         predict_with_generate=True,
         evaluation_strategy="steps",
-        num_train_epochs=20,
+        optim="adamw_torch_fused",
+        lr_scheduler_type="cosine",
         learning_rate=5e-5,
         weight_decay=0.01,
-        optim="adamw_torch",
+        num_train_epochs=10,
         logging_steps=10,
-        save_steps=120,
-        eval_steps=120,
-        warmup_steps=1000,
+        save_steps=150,
+        eval_steps=150,
+        warmup_steps=200,
         save_total_limit=100,
         fp16=False if device == "cpu" else True,
         overwrite_output_dir=True,
@@ -91,9 +92,12 @@ def train_model(TRAINING_ITEM,
 
     # Set trainer
     print("Setting trainer... ", end="")
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    learning_rate_scheduler_steplr = torch.optim.lr_scheduler.StepLR(optimizer, 140, 0.75)
     trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
+        # optimizers=(optimizer, learning_rate_scheduler_steplr),
         tokenizer=feature_extractor,
         train_dataset=processed_dataset['train'],
         eval_dataset=processed_dataset['test'],

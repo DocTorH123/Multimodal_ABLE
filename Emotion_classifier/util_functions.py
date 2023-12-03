@@ -17,9 +17,11 @@ def classif_image_transformation(img_dim, lanczos=True):
     normalize = transforms.Normalize(mean=image_net_mean, std=image_net_std)
     return transforms.Compose([transforms.Resize((img_dim, img_dim), resample_method), transforms.ToTensor(), normalize])
 
-def print_out_emotions(emotion_histogram, emotion_labels) :
+def print_out_emotions(emotion_histogram) :
     max_emotion_idx = 0
     for i in range(len(emotion_histogram)) :
-        print(emotion_labels[i], ": ", emotion_histogram[i])
+        print(artemis_emotions[i], ": ", emotion_histogram[i])
         if emotion_histogram[max_emotion_idx] <= emotion_histogram[i] : max_emotion_idx = i
-    print("Max emotion :", emotion_labels[max_emotion_idx], ", Value :", emotion_histogram[max_emotion_idx])
+    print("Max emotion :", artemis_emotions[max_emotion_idx], ", Value :", emotion_histogram[max_emotion_idx])
+
+    return artemis_emotions[max_emotion_idx]
